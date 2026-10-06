@@ -1,0 +1,2 @@
+FROM minigames-agent
+COPY scripted.py /usr/local/bin/scripted-agent

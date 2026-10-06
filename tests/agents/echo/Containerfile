@@ -1,0 +1,2 @@
+FROM minigames-agent
+COPY echo.py /usr/local/bin/echo-agent

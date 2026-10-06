@@ -1,0 +1,2 @@
+FROM minigames-agent
+COPY stepper.py /usr/local/bin/stepper-agent

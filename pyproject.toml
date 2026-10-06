@@ -1,0 +1,31 @@
+[build-system]
+requires = ["maturin>=1.7,<2"]
+build-backend = "maturin"
+
+[project]
+name = "minigames"
+description = "Small games for people and for agents that only see pixels"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+dynamic = ["version"]
+
+[project.optional-dependencies]
+# What films an episode. The games need nothing.
+bench = [
+    "imageio-ffmpeg>=0.6.0",
+]
+
+[project.scripts]
+minigames-bench = "minigames.bench.__main__:main"
+
+[dependency-groups]
+dev = ["maturin>=1.7,<2", "pytest>=8"]
+
+[tool.maturin]
+manifest-path = "crates/py/Cargo.toml"
+module-name = "minigames._core"
+python-source = "python"
+features = ["pyo3/extension-module"]
+
+[tool.pytest.ini_options]
+markers = ["containers: plays an episode in containers; runs only with --containers"]

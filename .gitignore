@@ -1,0 +1,9 @@
+target/
+__pycache__/
+*.pyc
+.venv/
+runs/
+*.so
+*.pyd
+.pytest_cache/
+*.egg-info/

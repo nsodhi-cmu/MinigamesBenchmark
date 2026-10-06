@@ -1,0 +1,4 @@
+# The style this repository is written in, written down so `cargo fmt`
+# reproduces it instead of fighting it.
+max_width = 100
+use_small_heuristics = "Max"

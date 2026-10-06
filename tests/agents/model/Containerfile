@@ -1,0 +1,2 @@
+FROM minigames-agent
+COPY fake.py /usr/local/bin/fake-model

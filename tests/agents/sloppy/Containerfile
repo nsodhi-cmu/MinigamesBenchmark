@@ -1,0 +1,5 @@
+FROM minigames-agent
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends xdotool \
+ && rm -rf /var/lib/apt/lists/*
+COPY sloppy.sh /usr/local/bin/sloppy

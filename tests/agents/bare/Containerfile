@@ -1,0 +1,3 @@
+# An image with nothing in it, not even the `sleep` an agent image must keep.
+FROM scratch
+LABEL minigames.test=bare

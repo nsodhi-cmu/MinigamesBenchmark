@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minigames Benchmark</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; }
+  body { display: flex; align-items: center; justify-content: center; }
+  canvas { width: min(1280px, 100vw, calc(100vh * 4 / 3)); image-rendering: pixelated; }
+</style>
+<canvas id="screen"></canvas>
+<script type="module">
+  const bytes = await (await fetch("minigame_web.wasm")).arrayBuffer();
+  const { instance } = await WebAssembly.instantiate(bytes);
+  const game = instance.exports;
+  const memory = game.memory;
+  const width = game.width();
+  const height = game.height();
+
+  const canvas = document.getElementById("screen");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+
+  const encoder = new TextEncoder();
+  function send(text) {
+    const buffer = new Uint8Array(memory.buffer, game.line(), game.line_length());
+    const { written } = encoder.encodeInto(text, buffer);
+    game.act(written);
+  }
+
+  const NAMES = {
+    " ": "SPACE", Enter: "ENTER", Backspace: "BACKSPACE", Escape: "ESC", Shift: "SHIFT",
+    ArrowUp: "UP", ArrowDown: "DOWN", ArrowLeft: "LEFT", ArrowRight: "RIGHT",
+  };
+  function named(event) {
+    if (event.key in NAMES) return NAMES[event.key];
+    const key = event.key.length === 1 ? event.key.toUpperCase() : "";
+    if (/^[A-Z0-9]$/.test(key)) return key;
+    const physical = /^(?:Key|Digit)([A-Z0-9])$/.exec(event.code);
+    return physical ? physical[1] : null;
+  }
+  function onKey(verb) {
+    return (event) => {
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      const name = named(event);
+      if (name === null) return;
+      event.preventDefault();
+      send(`${verb} ${name}`);
+    };
+  }
+  window.addEventListener("keydown", onKey("down"));
+  window.addEventListener("keyup", onKey("up"));
+
+  function place(event) {
+    const box = canvas.getBoundingClientRect();
+    const x = Math.round((event.clientX - box.left) * width / box.width);
+    const y = Math.round((event.clientY - box.top) * height / box.height);
+    return `${x} ${y}`;
+  }
+  function button(event) {
+    return event.button === 2 ? "right " : "";
+  }
+  canvas.addEventListener("mousemove", (event) => send(`move ${place(event)}`));
+  canvas.addEventListener("mousedown", (event) => send(`press ${button(event)}${place(event)}`));
+  window.addEventListener("mouseup", (event) => send(`release ${button(event)}${place(event)}`));
+  canvas.addEventListener("contextmenu", (event) => event.preventDefault());
+
+  game.start(BigInt(Date.now()));
+  let last = performance.now();
+  function frame(now) {
+    game.advance((now - last) / 1000);
+    last = now;
+    if (game.closed()) game.start(BigInt(Date.now()));
+    const pixels = new Uint8ClampedArray(memory.buffer, game.draw(), width * height * 4);
+    context.putImageData(new ImageData(pixels, width, height), 0, 0);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+</script>

@@ -1,0 +1,20 @@
+# The platform's math library differs from one system to the next, so a game's trigonometry
+# goes through `libm`, which gives the same bits everywhere.
+disallowed-methods = [
+    { path = "f32::sin", reason = "use libm::sinf" },
+    { path = "f32::cos", reason = "use libm::cosf" },
+    { path = "f32::tan", reason = "use libm::tanf" },
+    { path = "f32::sin_cos", reason = "use libm::sincosf" },
+    { path = "f32::asin", reason = "use libm::asinf" },
+    { path = "f32::acos", reason = "use libm::acosf" },
+    { path = "f32::atan", reason = "use libm::atanf" },
+    { path = "f32::atan2", reason = "use libm::atan2f" },
+    { path = "f32::hypot", reason = "use libm::hypotf" },
+    { path = "f32::exp", reason = "use libm::expf" },
+    { path = "f32::ln", reason = "use libm::logf" },
+    { path = "f32::powf", reason = "use libm::powf" },
+    { path = "f64::sin", reason = "use libm::sin" },
+    { path = "f64::cos", reason = "use libm::cos" },
+    { path = "f64::atan2", reason = "use libm::atan2" },
+    { path = "f64::hypot", reason = "use libm::hypot" },
+]
