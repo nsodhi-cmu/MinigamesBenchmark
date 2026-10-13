@@ -7,16 +7,22 @@
   &nbsp;·&nbsp;
   <a href="https://minigames.sodhi.tech">Website</a>
   &nbsp;·&nbsp;
+  <a href="https://minigames.sodhi.tech/#games">Games</a>
+  &nbsp;·&nbsp;
+  <a href="https://minigames.sodhi.tech/#method">Paces</a>
+  &nbsp;·&nbsp;
+  <a href="https://minigames.sodhi.tech/#run">Run Your Agent</a>
+  &nbsp;·&nbsp;
+  <a href="https://minigames.sodhi.tech/#faq">FAQ</a>
+  &nbsp;·&nbsp;
   <a href="docs/">Documentation</a>
 </p>
 
-Small games that a person can finish in about a minute, and that an agent has to finish from pictures alone.
-
-Every game is a 640×480 picture and a handful of keys. An agent is given the frame and nothing else, and sends back what a mouse and a keyboard can do. Game time is counted in ticks, and the [pace](#playing-an-agent) decides when a tick passes.
+A compendium of minigames that humans can complete relatively easily in about a minute, but that state-of-the-art agents really struggle with.
 
 ## Playing It Yourself
 
-The quickest way is [in your browser](https://play.minigames.sodhi.tech). To play on the desktop, build the `minigame` command with Rust ([Building](#building)):
+The quickest way is [in your browser](https://play.minigames.sodhi.tech), or [at an agent's pace](https://minigames.sodhi.tech/#play). To play on the desktop, build the `minigame` command with Rust ([Building](#building)):
 
 ```
 cargo install --path crates/cli
@@ -44,7 +50,7 @@ import minigames
 episode = minigames.Episode("circles", seed=0)
 print(episode.prompt)
 while episode.outcome == "playing":
-    picture = episode.frame()          # a PNG, and nothing else
+    picture = episode.frame()          # a PNG
     episode.act("click 320 240", ticks=6)
 print(episode.report())
 ```
@@ -55,61 +61,52 @@ print(episode.report())
   <img src="https://minigames.sodhi.tech/assets/gameplay.gif" alt="Twelve of the games, played: a raceway, hexagons, twin lines, traffic, an icy arena, flooded caverns, falling tiles, a word search, a round maze, a saucer row, ice isles, and a packing grid" width="760">
 </p>
 
-Every game has the same three-minute limit. A run is scored one per episode finished inside it; time is reported beside the score, not folded into it. [GAMES.md](docs/GAMES.md) lists every game and what it measures, and [TAGS.md](docs/TAGS.md) groups them.
+Every game has the same three-minute limit. A run scores one for every game finished inside it; time is reported separately. [GAMES.md](docs/GAMES.md) lists every game and what it measures, [TAGS.md](docs/TAGS.md) groups them, and the [website](https://minigames.sodhi.tech/#games) has a clip of each.
 
 ## Playing An Agent
 
-An agent plays in a container of its own, on a 640×480 display that shows the game and nothing else. It takes screenshots and works the mouse and keyboard, as on a Linux desktop. The game plays in a second container that carries the display, an X server of its own, so the host's display, whether X11, Wayland, or none, plays no part.
+An agent plays in [its own container](docs/BENCH.md#an-agent-in-a-container), on a 640×480 display that shows only the game. It takes screenshots and works the mouse and keyboard, as on a Linux desktop. The game plays in a second container that carries the display on its own X server, so the host's display, whether X11, Wayland, or none, plays no part.
 
-- **On a clock**, with `--clock N`, the game does not wait: it runs `N` ticks of game time per second of the agent's, 60 being full speed and `--clock 6` ten times slower, limit included.
-- **In ticks**, with `--ticks N`, the game stands still, and each press of F1 lets `N` ticks pass, one where `N` is left out. An agent must hold a key or button down across a press of F1: one pressed and let go between two presses lands nothing but where the pointer went. `--idle-timeout` and `--total-timeout` stop an episode whose agent stops pressing F1 or runs too long; neither applies unless given.
-- The agent's command gets the task, the screen, the pace, and the game's prompt, in place of `{task}`; `podman run --rm minigames-game task maze --ticks 3` prints it.
+- **On a clock**, with `--clock N`, the game does not wait: it runs `N` ticks of game time per second of real time, 60 being full speed and `--clock 6` ten times slower, limit included.
+- **In ticks**, with `--ticks N`, the game stands still, and each press of F1 lets `N` ticks pass, one if `N` is left out. A key or button must be held down across a press of F1: one pressed and released between two presses only moves the pointer. `--idle-timeout` and `--total-timeout` stop an episode whose agent stops pressing F1 or runs too long; both are off by default.
+- `{task}` in the agent's command becomes the task: the screen, the pace, and the game's prompt. `podman run --rm minigames-game task maze --ticks 3` prints it.
 
 ```
 podman build -t minigames-game .                   # the image a game is played in
 podman build -t minigames-agent agent              # the image an agent plays from
-python -m minigames.bench --run-agent minigames-agent \
+uv run python -m minigames.bench --run-agent minigames-agent \
     "harness --base-url http://host.containers.internal:PORT/v1 --model MODEL clock {task}" \
     --engine podman --clock 6
 ```
 
-A run is written into `runs/`, or wherever `--out` says, and plays seed 0 unless `--seed` names another. Every flag is listed in [BENCH.md](docs/BENCH.md#the-command-line). The benchmark itself is every game at four paces, `--ticks 3`, `--clock 6`, `--clock 20`, and `--clock 60`, set out with how long each takes in [BENCH.md](docs/BENCH.md#the-benchmark).
+A run is written into `runs/`, or wherever `--out` says, as a [`result.json` and an `inputs.txt`](docs/BENCH.md#what-a-run-writes) for each game, and plays seed 0 unless `--seed` names another. Every episode is checked by [replaying its inputs](docs/ENGINE.md#the-replay). [BENCH.md](docs/BENCH.md#the-command-line) lists every flag, among them `--games`, `--tags`, `--jobs`, `--record`, `--resume`, and `--report`. The benchmark is every game at four paces, `--ticks 3`, `--clock 6`, `--clock 20`, and `--clock 60`; [BENCH.md](docs/BENCH.md#the-benchmark) and the [website](https://minigames.sodhi.tech/#method) show how long each takes.
 
-The agent image comes with `harness`, a deliberately minimal placeholder for your own agent. Each turn it screenshots, asks any OpenAI-compatible endpoint what to do, and runs the `pyautogui` code that comes back, remembering nothing. `harness clock` plays in real time; `harness ticks` presses F1 after each answer. The endpoint and model are `--base-url` and `--model`, or `OPENAI_BASE_URL` and `OPENAI_MODEL`; a key is `OPENAI_API_KEY`.
+The agent image comes with [`harness`](docs/BENCH.md#the-harness-in-the-agent-image), a deliberately minimal placeholder for your own agent. Each turn it screenshots, asks any OpenAI-compatible endpoint what to do, and runs the `pyautogui` code that comes back, remembering nothing. `harness clock` plays in real time; `harness ticks` presses F1 after each answer. The endpoint and model are `--base-url` and `--model`, or `OPENAI_BASE_URL` and `OPENAI_MODEL`; the key is `OPENAI_API_KEY`. The website has [its results](https://minigames.sodhi.tech/#run).
 
 ### Bringing Your Own Agent
 
-1. Write a Containerfile of your own, in a folder of its own, that installs your agent, starting `FROM minigames-agent` for Python, `pyautogui`, `xdotool`, and `x11-utils`, or from any Linux image that has `sh` and `sleep`, and build it under a name of your own. Environment settings go in as `ENV` lines, or before the command as `env NAME=value`. The command is written into the run's records as it is given, so keep secrets such as API keys out of it and in the image instead.
-2. Run it with the command that starts it, `{task}` standing for the task:
+1. Write a Containerfile, in its own folder, that installs your agent. Start `FROM minigames-agent` for Python, `pyautogui`, `xdotool`, and `x11-utils`, or from any Linux image that has `sh` and `sleep`. Environment settings go in as `ENV` lines, or before the command as `env NAME=value`. The command is saved with the run as given, so keep secrets such as API keys in the image instead.
+2. Build it, and run it with the command that starts it, `{task}` standing for the task:
 
 ```
 podman build -t my-agent my-agent
-python -m minigames.bench --run-agent my-agent "my-agent {task}" --engine podman
+uv run python -m minigames.bench --run-agent my-agent "my-agent {task}" --engine podman
 ```
 
-- `--engine` is `podman` or `docker`, with no default. Each engine keeps its own images, built with the engine that plays them; docker wants the file named: `docker build -f agent/Containerfile -t minigames-agent agent`.
-- The agent's container has `DISPLAY=:0`, `WIDTH=640`, `HEIGHT=480`, and its engine's default network. A server on this machine, such as a local model, is `host.containers.internal` under podman and `host.docker.internal` under docker, and must listen on more than `127.0.0.1`.
+- `--engine` is `podman` or `docker`, with no default. Each engine keeps its own images, so build with the one that plays them; docker needs the file named: `docker build -f agent/Containerfile -t minigames-agent agent`.
+- The agent's container has `DISPLAY=:0`, `WIDTH=640`, `HEIGHT=480`, and its engine's default network. A server on the host, such as a local model, is `host.containers.internal` under podman and `host.docker.internal` under docker, and must listen on more than `127.0.0.1`.
 - Nothing stops an agent from opening windows over the game, closing the game's window, or installing software as it plays, but a score won any way other than by playing the game as intended does not count.
-
-## Why Rust
-
-The games are Rust and the runner is Python. The games are Rust for four things:
-
-- **Determinism.** An episode is its seed and the inputs that landed, and it plays out the same bits every time: every episode is checked by playing it again, and every recording is made that way. There is no garbage collector or runtime between the game and its arithmetic, and trigonometry goes through `libm` rather than the platform's own math library.
-- **One codebase, every target.** The same game code is the `minigame` binary in the game's container, the Python extension the runner replays with, the WebAssembly build that plays in a browser, and the desktop game a person plays.
-- **Speed.** Every frame is drawn in software, sixty times a second of game time, with no GPU. Many episodes can play at once with `--jobs`, and a test or a recording plays thousands of ticks in moments.
-- **A small game image.** The display client is pure Rust, so the game's container holds one compiled binary and the X server, and nothing to install beside them.
 
 ## The Components
 
-| Component | What it describes |
-|---|---|
-| [engine](docs/ENGINE.md) | The picture, the action language, the clock, and the episode |
-| [cli](docs/CLI.md) | The `minigame` command and its window |
-| [games](docs/GAMES.md) | Every game, and what it measures |
-| [tags](docs/TAGS.md) | The tags, and which games carry them |
-| [bench](docs/BENCH.md) | Running agents in containers, the harness, and scoring |
-| [web](docs/WEB.md) | The games in a browser |
+| Component | Path | What it describes |
+|---|---|---|
+| [engine](docs/ENGINE.md) | [`crates/engine`](crates/engine) | The picture, the action language, the clock, and the episode |
+| [cli](docs/CLI.md) | [`crates/cli`](crates/cli) | The `minigame` command and its window |
+| [games](docs/GAMES.md) | [`crates/engine/src/games`](crates/engine/src/games) | Every game, and what it measures |
+| [tags](docs/TAGS.md) | [`crates/engine/src/game.rs`](crates/engine/src/game.rs) | The tags, and which games carry them |
+| [bench](docs/BENCH.md) | [`python/minigames`](python/minigames), [`crates/py`](crates/py), [`agent`](agent) | Running agents in containers, the harness, and scoring |
+| [web](docs/WEB.md) | [`crates/web`](crates/web) | The games in a browser |
 
 ## Building
 
@@ -118,7 +115,7 @@ cargo build --release                       # target/release/minigame
 cargo install --path crates/cli             # puts minigame on PATH
 ```
 
-Building needs Rust and a C compiler. On Linux the window loads the desktop's own X11 or Wayland libraries, and `libxkbcommon`, when it opens.
+Building needs Rust, a C compiler, and [uv](https://docs.astral.sh/uv/); playing an agent needs podman or docker. On Linux the window loads the desktop's own X11 or Wayland libraries, and `libxkbcommon`, when it opens.
 
 The same games play in a browser:
 

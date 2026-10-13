@@ -103,10 +103,10 @@ harness [--base-url URL] [--model NAME] clock|ticks TASK
 A run's games are played by `containers.sweep`. Stopping it kills every container it started and keeps what had finished. At the end the run prints every game's outcome, ticks, and seconds, and how many passed.
 
 ```
-python -m minigames.bench --run-agent minigames-agent \
+uv run python -m minigames.bench --run-agent minigames-agent \
     "harness --base-url http://host.containers.internal:PORT/v1 --model MODEL ticks {task}" \
     --engine podman --ticks 3 --idle-timeout 180 --total-timeout 10800
-python -m minigames.bench --run-agent my-agent-image "my-agent {task}" --engine docker \
+uv run python -m minigames.bench --run-agent my-agent-image "my-agent {task}" --engine docker \
     --clock 20 --tags timing --jobs 4
 ```
 
@@ -162,11 +162,11 @@ The benchmark is every game played at four paces, a run at each:
 | `--clock 60` | Runs at full speed | 3 minutes |
 
 ```
-python -m minigames.bench --run-agent IMAGE "COMMAND {task}" --engine podman --ticks 3 --out runs/ticks3
-python -m minigames.bench --run-agent IMAGE "COMMAND {task}" --engine podman --clock 6 --out runs/clock6
-python -m minigames.bench --run-agent IMAGE "COMMAND {task}" --engine podman --clock 20 --out runs/clock20
-python -m minigames.bench --run-agent IMAGE "COMMAND {task}" --engine podman --clock 60 --out runs/clock60
-python -m minigames.bench --report runs/ticks3 runs/clock6 runs/clock20 runs/clock60
+uv run python -m minigames.bench --run-agent IMAGE "COMMAND {task}" --engine podman --ticks 3 --out runs/ticks3
+uv run python -m minigames.bench --run-agent IMAGE "COMMAND {task}" --engine podman --clock 6 --out runs/clock6
+uv run python -m minigames.bench --run-agent IMAGE "COMMAND {task}" --engine podman --clock 20 --out runs/clock20
+uv run python -m minigames.bench --run-agent IMAGE "COMMAND {task}" --engine podman --clock 60 --out runs/clock60
+uv run python -m minigames.bench --report runs/ticks3 runs/clock6 runs/clock20 runs/clock60
 ```
 
 On a clock, a game runs until it is won or lost or its limit passes, so a game takes up to its limit in the agent's time from the table, and a run up to that for every game. In ticks, a game waits on its agent, so a run lasts as long as the agent takes over every game, unless `--idle-timeout` or `--total-timeout` stops an episode sooner. `--jobs` plays several games at once.
